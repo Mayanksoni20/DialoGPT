@@ -5,30 +5,40 @@
           Modified based on Huggingface GPT-2 implementation
 '''
 
-import json
-import os
+# import json
+# import os
+# import sys
+# import argparse
+# import logging
+# import time
+# import tqdm
+# import datetime
+# import torch
+
+# import numpy as np
+
+# from os.path import join
+# from torch.distributed import get_rank, get_world_size
+
+# from lsp_model import GPT2LMHeadModel, GPT2Tokenizer, GPT2Config, Adam
+# from gpt2_training.train_utils import load_model, boolean_string, set_lr, get_eval_list_same_length
+# from gpt2_training.eval_utils import eval_model_loss
+
+
+# from data_loader import BucketingDataLoader, DynamicBatchingLoader, DistributedBucketingDataLoader
+
+
+# from gpt2_training.distributed import all_reduce_and_rescale_tensors, all_gather_list
+
 import sys
-import argparse
-import logging
-import time
-import tqdm
-import datetime
-import torch
+sys.path.append('/home/mayank/Github/elastic_decoding/End-to-end-dialogue-training-with-ScaleGrad/ScaleGrad/custom/gpt2/')
+from run_gpt2 import dummytest
 
-import numpy as np
+# PYTHONPATH=home/mayank/Github/elastic_decoding/End-to-end-dialogue-training-with-ScaleGrad/ScaleGrad/custom/gpt2/
+# from utils.generator import sg_loss, getNovelMask, dummytest
 
-from os.path import join
-from torch.distributed import get_rank, get_world_size
-
-from lsp_model import GPT2LMHeadModel, GPT2Tokenizer, GPT2Config, Adam
-from gpt2_training.train_utils import load_model, boolean_string, set_lr, get_eval_list_same_length
-from gpt2_training.eval_utils import eval_model_loss
-
-from data_loader import BucketingDataLoader, DynamicBatchingLoader, DistributedBucketingDataLoader
-
-
-from gpt2_training.distributed import all_reduce_and_rescale_tensors, all_gather_list
-
+print('reached here')
+dummytest()
 
 logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
@@ -71,7 +81,7 @@ parser.add_argument("--warmup_proportion", type=float, default=0.1)
 parser.add_argument("--warmup_steps", type=int, default=16000)
 
 parser.add_argument("--normalize_data", type=boolean_string, default=True)
-parser.add_argument("--fp16", type=boolean_string, default=True)
+parser.add_argument("--fp16", type=boolean_string, default=False)
 parser.add_argument("--lr_schedule", type=str,
                     choices=['noam', 'noamwd', 'BERT', 'None'], default='noam')
 parser.add_argument("--loss_scale", type=float, default=0)
@@ -262,13 +272,16 @@ if args.local_rank != -1:
     n_gpu = 1
 if args.local_rank == -1 or get_rank() == 0:
     if args.pbar:
-        pbar = tqdm.tqdm(total=args.num_optim_steps, desc=f"training")
+        pbar = tqdm.tqdm(total=args.num_optim_steps, desc=f"training this fucking thing")
     else:
         pbar = None
+print("This sucks. If it prints till here then why wouldn't it enter the while loop")
 
 while True:
+    print ("entering loop 1")
     model.train()
     (tr_loss, tr_ppl, mean_ppl, nb_tr_examples, nb_tr_steps) = 0.0, 0.0, 0.0, 0, 0
+    print ('Training Perplexity', tr_ppl)
     n_token_real, n_token_total = 0, 0
     train_start_time_epoch = time.time()
     for batch in train_dataloader:
@@ -278,7 +291,10 @@ while True:
         input_ids, position_ids, token_ids, label_ids, *_ = batch
         if args.no_token_id:
             token_ids = None
+
+        #This is where the loss can be changed to Scale-grad loss    
         loss, ppl = model(input_ids, position_ids, token_ids, label_ids)
+        print('Perplexity from batches', ppl)
 
         if n_gpu > 1:
             loss = loss.mean()
